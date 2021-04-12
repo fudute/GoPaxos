@@ -104,6 +104,9 @@ func (acceptor *Acceptor) OnAccept(req *AcceptRequest, resp *AcceptResponse) err
 func (acceptor *Acceptor) OnLearn(req *LearnRequest, resp *LearnResponse) error {
 	log.Printf("[%d] receive Learn, {LearnValue = %s}\n", req.Index, req.AcceptedValue)
 
+	lo.Lock()
+	defer lo.Unlock()
+
 	entry := &LogEntry{}
 	entry.AcceptedProposal = req.AcceptedProposal
 	entry.MinProposal = req.AcceptedProposal

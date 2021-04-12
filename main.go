@@ -92,7 +92,7 @@ func catchUpOthers() {
 		Oper: paxos.NOP,
 		Done: make(chan error),
 	}
-	paxos.GetProposerInstance().In <- req
+	paxos.GetProposerInstance().In <- &req
 
 	err := <-req.Done
 	if err != nil {
