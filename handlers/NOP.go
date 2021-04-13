@@ -13,7 +13,7 @@ func SendNop(c *gin.Context) {
 		Oper: paxos.NOP,
 		Done: make(chan error),
 	}
-	paxos.GetProposerInstance().In <- &req
+	paxos.GetBatcherInstance().In <- &req
 
 	err := <-req.Done
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/rpc"
+	"strings"
 	"sync"
 
 	"github.com/fudute/GoPaxos/sm"
@@ -119,7 +120,10 @@ func (acceptor *Acceptor) OnLearn(req *LearnRequest, resp *LearnResponse) error 
 	}
 
 	// 在这里执行命令
-	sm.GetKVStatMachineInstance().Execute(req.AcceptedValue)
+	commands := strings.Split(req.AcceptedValue, commandSpliter)
+	for i := 0; i < len(commands); i++ {
+		sm.GetKVStatMachineInstance().Execute(commands[i])
+	}
 
 	return err
 }

@@ -12,8 +12,6 @@ type Proposer struct {
 	ServerID  int
 	LogIndex  int // 记录最小的没有Chosen的logIndex
 	Peers     []*rpc.Client
-	In        chan *Request
-	buffSize  int // 从客户端接收请求的channel，也就是 In 的缓冲区大小
 	peerNames []string
 	peerCnt   int
 
@@ -59,26 +57,27 @@ type LearnRequest struct {
 type LearnResponse struct {
 }
 
+const commandSpliter = ";"
+
 func init() {
 	proposer.peerNames = GetPeerNameList()
 	proposer.peerCnt = len(proposer.peerNames)
-	proposer.In = make(chan *Request, proposer.buffSize)
 	proposer.Peers = make([]*rpc.Client, proposer.peerCnt)
 }
 
 func ProposerHandleRequst() {
 	go func() {
 		for {
-			req := <-proposer.In
-			if req.Oper == NOP {
-				fmt.Println("start nop")
-			}
-			err := StartNewInstance(req.Oper, req.Key, req.Value)
+			batchReqs := <-GetBatcherInstance().Out
+			err := StartNewInstance(batchReqs.Reqs...)
 			if err != nil {
 				log.Println("Instance error", err)
 			}
 			// 这里可以选择往done中传不同的参数表示不同的结果
-			req.Done <- err
+			for i := 0; i < len(batchReqs.Reqs); i++ {
+				batchReqs.Reqs[i].Done <- err
+			}
+			batchReqs.Done <- struct{}{}
 		}
 	}()
 }
@@ -114,20 +113,28 @@ func InitProposerNetwork() {
 // peers including itself
 // 这里发起proposal，直到自己提议的value被chosen，具体的数据传输在doPrepare中完成
 // oper取值范围为SET DELETE NOP
-func StartNewInstance(oper int, key string, value string) error {
+func StartNewInstance(reqs ...*Request) error {
 
-	var command string
-	if oper == SET {
-		command = "SET " + key + " " + value
-	} else if oper == DELETE {
-		command = "DELETE " + key
-	} else if oper == NOP {
-		command = "NOP"
-	} else {
-		return ErrorUnkonwCommand
+	var commands string
+
+	// 这里首先假设key和value只包含26个英文字母，然后使用 ';' 来分割commands中的不同命令
+	// 注：在log中，已经使用 ':' 来分割不同的部分，所以在这里不能用 ':'
+	for _, req := range reqs {
+		var command string
+		if req.Oper == SET {
+			command = "SET " + req.Key + " " + req.Value
+		} else if req.Oper == DELETE {
+			command = "DELETE " + req.Key
+		} else if req.Oper == NOP {
+			command = "NOP"
+		} else {
+			return ErrorUnkonwCommand
+		}
+		commands += commandSpliter + command
 	}
+	commands = commands[1:]
 
-	log.Println("StartNewInstance command :", command)
+	log.Println("StartNewInstance commands :", commands)
 
 	// 循环获得第一个没有被Chosen的index，直到成功Prepare
 	isMeCommited := false
@@ -143,7 +150,7 @@ func StartNewInstance(oper int, key string, value string) error {
 			log.Fatal("read error", err)
 		}
 
-		isMeCommited, err = DoPrepare(proposer.LogIndex, command, 0)
+		isMeCommited, err = DoPrepare(proposer.LogIndex, commands, 0)
 		if err != nil {
 			return err
 		}

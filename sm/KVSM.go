@@ -2,6 +2,7 @@ package sm
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 )
@@ -20,6 +21,10 @@ func GetKVStatMachineInstance() StatMachine {
 }
 
 func (kvSM *kvStatMachine) Execute(command string) (string, error) {
+	if len(command) == 0 {
+		fmt.Println("empty command")
+		return "", nil
+	}
 	log.Printf("execute command: %s\n", command)
 
 	tokens := strings.Split(command, " ")
@@ -47,5 +52,4 @@ func (kvSM *kvStatMachine) Execute(command string) (string, error) {
 		return "", nil
 	}
 	return "", errors.New("unkonw command")
-
 }

@@ -1,94 +1,53 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"flag"
 	"fmt"
-	"log"
-	"math/rand"
-	"net/http"
 	"sync"
+	"testing"
 	"time"
+
+	"github.com/fudute/GoPaxos/driver"
+	"github.com/fudute/GoPaxos/utils"
 )
 
-var port *int
-var addr *string
+var c *driver.Client
 
-var wg sync.WaitGroup
+func init() {
+	c = driver.NewClient("127.0.0.1", 8000)
+}
 
-func randString(n int) string {
-	lenght := rand.Int()%n + 1
+func TestClient(t *testing.T) {
+	key := "name"
+	value := "yangxingtai"
+	c.Set(key, value)
 
-	str := make([]byte, lenght)
-	for i := 0; i < lenght; i++ {
-		str[i] = byte(rand.Int()%26) + 'a'
+	name, err := c.Get(key)
+	if err != nil {
+		t.Error(err)
 	}
-	return string(str)
-}
-
-func testGet(n int) {
-	wg.Add(n)
-	start := time.Now()
-	for i := 0; i < n; i++ {
-		go func() {
-			_, err := http.Get(fmt.Sprintf("http://%s:%d/get/name", *addr, *port))
-			if err != nil {
-				log.Fatal(err)
-			}
-			wg.Done()
-		}()
+	if name != value {
+		t.Error("test error")
 	}
-	wg.Wait()
-
-	fmt.Println(time.Since(start))
-
 }
-
-type KVPair struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-func testSet(n int) {
-
-	wg.Add(n)
-	start := time.Now()
-	for i := 0; i < n; i++ {
-
-		kvp := &KVPair{
-			Key:   randString(10),
-			Value: randString(10),
-		}
-
-		bs, err := json.Marshal(kvp)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		time.Sleep(time.Millisecond * 1)
-		go func() {
-			_, err := http.Post(fmt.Sprintf("http://%s:%d/store/set", *addr, *port), "application/json", bytes.NewReader(bs))
-			if err != nil {
-				log.Fatal(err)
-			}
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-
-	fmt.Println(time.Since(start))
-}
-
-// "set key value"
 
 func main() {
-	addr = flag.String("addr", "127.0.0.1", "address of server")
-	port = flag.Int("port", 8000, "port to server")
-	flag.Parse()
+	var wg sync.WaitGroup
+	count := 1000
 
-	fmt.Println("port = ", *port)
-	rand.Seed(time.Now().Unix())
-	n := 1000
-	testSet(n)
+	wg.Add(count)
+
+	start := time.Now()
+
+	for i := 0; i < count; i++ {
+		go func() {
+			key := utils.RandString(10)
+			value := utils.RandString(10)
+
+			c.Set(key, value)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	fmt.Println(time.Since(start))
 }
