@@ -1,36 +1,23 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"sync"
-	"testing"
 	"time"
 
 	"github.com/fudute/GoPaxos/driver"
 	"github.com/fudute/GoPaxos/utils"
 )
 
-var c *driver.Client
-
-func init() {
-	c = driver.NewClient("127.0.0.1", 8000)
-}
-
-func TestClient(t *testing.T) {
-	key := "name"
-	value := "yangxingtai"
-	c.Set(key, value)
-
-	name, err := c.Get(key)
-	if err != nil {
-		t.Error(err)
-	}
-	if name != value {
-		t.Error("test error")
-	}
-}
+var ip = flag.String("ip", "127.0.0.1", "specify the ip address of server")
+var port = flag.Int("port", 8000, "port of server")
 
 func main() {
+	flag.Parse()
+
+	c := driver.NewClient(*ip, *port)
+
 	var wg sync.WaitGroup
 	count := 1000
 

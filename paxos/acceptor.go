@@ -122,7 +122,12 @@ func (acceptor *Acceptor) OnLearn(req *LearnRequest, resp *LearnResponse) error 
 	// 在这里执行命令
 	commands := strings.Split(req.AcceptedValue, commandSpliter)
 	for i := 0; i < len(commands); i++ {
-		sm.GetKVStatMachineInstance().Execute(commands[i])
+
+		cmd := sm.Command{
+			Index: req.Index,
+			Cmd:   req.AcceptedValue,
+		}
+		sm.GetKVStatMachineInstance().Execute(cmd)
 	}
 
 	return err

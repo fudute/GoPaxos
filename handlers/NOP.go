@@ -8,11 +8,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SendNop(c *gin.Context) {
+func Nop(c *gin.Context) {
 	req := paxos.Request{
 		Oper: paxos.NOP,
 		Done: make(chan error),
 	}
+
 	paxos.GetBatcherInstance().In <- &req
 
 	err := <-req.Done

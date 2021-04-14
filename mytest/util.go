@@ -56,6 +56,7 @@ func genReader(pair KVPair) *bytes.Reader {
 	reader := bytes.NewReader(bs)
 	return reader
 }
+
 func randString(len int) string {
 	bytes := make([]byte, len)
 	for i := 0; i < len; i++ {
@@ -64,6 +65,7 @@ func randString(len int) string {
 	}
 	return string(bytes)
 }
+
 func genKVpair(valuelen int) KVPair {
 	if valuelen <= 0 {
 		valuelen = 10

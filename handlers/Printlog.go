@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/fudute/GoPaxos/paxos"
@@ -23,7 +23,7 @@ func PrintLog(c *gin.Context) {
 	} else {
 		fileName = fileName[1:]
 	}
-	fmt.Printf("try to write logs to file %v\n", fileName)
+	log.Printf("try to write logs to file %v\n", fileName)
 	paxos.DB.PrintLog(fileName)
 	resp := PrintLogResp{FileName: fileName}
 	c.JSON(http.StatusOK, resp)

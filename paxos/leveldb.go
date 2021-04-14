@@ -6,7 +6,6 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/fudute/GoPaxos/sm"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -17,7 +16,6 @@ var ErrorBadLogFormat = errors.New("bad log format")
 
 func InitDB() {
 	DB = NewLevelDB("../db")
-
 	DB.Restore(GetProposerInstance(), GetAcceptorInstance(), sm.GetKVStatMachineInstance())
 }
 
@@ -80,9 +78,7 @@ func (level *LevelDB) ReadLog(index int) (*LogEntry, error) {
 	return le, nil
 }
 
-func (level *LevelDB) Restore(p *Proposer, a *Acceptor, sm sm.StatMachine) error {
-	lock.Lock()
-	defer lock.Unlock()
+func (level *LevelDB) Restore(p *Proposer, a *Acceptor, statMachine sm.StatMachine) error {
 
 	iter := level.db.NewIterator(nil, nil)
 
@@ -104,8 +100,12 @@ func (level *LevelDB) Restore(p *Proposer, a *Acceptor, sm sm.StatMachine) error
 			log.Fatal("db format is incorrect")
 		}
 		if p.LogIndex == index && le.IsCommited {
+			cmd := sm.Command{
+				Index: p.LogIndex,
+				Cmd:   le.AcceptedValue,
+			}
+			statMachine.Execute(cmd)
 			p.LogIndex++
-			sm.Execute(le.AcceptedValue)
 		}
 	}
 	return nil
@@ -144,8 +144,6 @@ func parseLog(str string) (*LogEntry, error) {
 	return le, nil
 }
 
-var lock sync.Mutex
-
 func extractCommand(value string) string {
 	var ret string
 	first := -2
@@ -165,48 +163,48 @@ func extractCommand(value string) string {
 }
 
 func (db *LevelDB) PrintLog(fileName string) {
-	go func() {
-		lock.Lock()
-		defer lock.Unlock()
+	view, err := db.db.GetSnapshot()
+	if err != nil {
+		log.Println("Get snap shot error:", err)
+	}
 
-		iter := db.db.NewIterator(nil, nil)
-		file := openNewEmptyFile("/home/log/" + fileName)
-		defer file.Close()
+	iter := view.NewIterator(nil, nil)
+	file := openNewEmptyFile("/home/log/" + fileName)
+	defer file.Close()
 
-		log_index := 0
-		for iter.Next() {
-			key, value := iter.Key(), iter.Value()
-			le, err := parseLog(string(value))
-			if err != nil {
-				log.Printf("parse log failed, key :[%v] ,value :%v\n", key, value)
-				continue
-			}
-			// TODO
-			// > 1974 17:8:SET ntup xoyhdzdnxe:true
-			// ---
-			// > 1974 17:10:SET ntup xoyhdzdnxe:true
-			command := extractCommand(string(value))
-			db_index, err := strconv.Atoi(string(key))
-			if err != nil {
-				log.Printf("log index [%v] cant convert to int\n", string(key))
-			}
-			for i := log_index; i < db_index; i++ {
-				_, err = file.WriteString(strconv.Itoa(i) + " " + strconv.FormatBool(false) + " UNKNOWN\n")
-				if err != nil {
-					log.Println("write log error:", err)
-				}
-			}
-
-			_, err = file.WriteString(string(key) + " " + strconv.FormatBool(le.IsCommited) + " " + command + "\n")
-
-			if err != nil {
-				log.Printf("cant write commited log index:[%v] to file\n", string(key))
-				continue
-			}
-			log_index++
-
+	log_index := 0
+	for iter.Next() {
+		key, value := iter.Key(), iter.Value()
+		le, err := parseLog(string(value))
+		if err != nil {
+			log.Printf("parse log failed, key :[%v] ,value :%v\n", key, value)
+			continue
 		}
-		fmt.Printf("print all logs(total: %v) to ~/paxos_logs/n%v/%v"+
-			" successed, please check it later\n", log_index, GetServerID(), fileName)
-	}()
+		// TODO
+		// > 1974 17:8:SET ntup xoyhdzdnxe:true
+		// ---
+		// > 1974 17:10:SET ntup xoyhdzdnxe:true
+		command := extractCommand(string(value))
+		db_index, err := strconv.Atoi(string(key))
+		if err != nil {
+			log.Printf("log index [%v] cant convert to int\n", string(key))
+		}
+		for i := log_index; i < db_index; i++ {
+			_, err = file.WriteString(strconv.Itoa(i) + " " + strconv.FormatBool(false) + " UNKNOWN\n")
+			if err != nil {
+				log.Println("write log error:", err)
+			}
+		}
+
+		_, err = file.WriteString(string(key) + " " + strconv.FormatBool(le.IsCommited) + " " + command + "\n")
+
+		if err != nil {
+			log.Printf("cant write commited log index:[%v] to file\n", string(key))
+			continue
+		}
+		log_index++
+
+	}
+	fmt.Printf("print all logs(total: %v) to ~/paxos_logs/n%v/%v"+
+		" successed, please check it later\n", log_index, GetServerID(), fileName)
 }

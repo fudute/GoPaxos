@@ -65,26 +65,6 @@ func main() {
 	}()
 
 	wg.Wait()
-
-	// go func() {
-	// 	time.Sleep(time.Millisecond * time.Duration(rand.Int()%3000))
-
-	// 	for {
-	// 		time.Sleep(time.Second * 3)
-
-	// 		req := paxos.Request{
-	// 			Oper: paxos.NOP,
-	// 			Done: make(chan error),
-	// 		}
-	// 		paxos.GetProposerInstance().In <- req
-
-	// 		err := <-req.Done
-	// 		if err != nil {
-	// 			log.Printf("NOP error: ", err)
-	// 		}
-	// 	}
-	// }()
-
 }
 
 func catchUpOthers() {
