@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/fudute/GoPaxos/paxos"
+	"github.com/fudute/GoPaxos/request"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,16 +21,11 @@ func SetValue(c *gin.Context) {
 	c.Bind(&p)
 	fmt.Println(p)
 	// 这里启动一个新的Instance
-	req := paxos.Request{
-		Oper:  paxos.SET,
-		Key:   p.Key,
-		Value: p.Value,
-		Done:  make(chan error),
-	}
+	req := request.Set(p.Key, p.Value)
 
-	paxos.GetBatcherInstance().In <- &req
+	paxos.GetBatcherInstance().In <- req
 
-	err := <-req.Done
+	err := <-req.Done()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, nil)
 	}

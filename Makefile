@@ -11,7 +11,7 @@ all:
 	@echo "Build From Scratch"
 	make build && make provision
 
-request:
+requests:
 	@echo "Run client/client.go"
 	/bin/bash -c "go run ${PWD}/client/ -port=8000& go run ${PWD}/client/ -port=8001& go run ${PWD}/client/ -port=8002"
 	

@@ -1,6 +1,8 @@
 package request
 
-import "log"
+import (
+	"github.com/fudute/GoPaxos/paxos"
+)
 
 const (
 	SET = iota
@@ -10,27 +12,66 @@ const (
 )
 
 type KVRequest struct {
-	Oper  int
-	Key   string
-	Value string
-	done  chan error
+	done chan error
 }
 
-func (req *KVRequest) GetValue() string {
+type NopReq struct {
+	KVRequest
+}
 
-	var command string
-	if req.Oper == SET {
-		command = "SET " + req.Key + " " + req.Value
-	} else if req.Oper == DELETE {
-		command = "DELETE " + req.Key
-	} else if req.Oper == NOP {
-		command = "NOP"
-	} else {
-		// TODO 这里需要再斟酌一下
-		log.Println("Unknow command")
-		return ""
+type GetReq struct {
+	KVRequest
+	Key string
+}
+
+type SetReq struct {
+	KVRequest
+	Key   string
+	Value string
+}
+
+type DelReq struct {
+	KVRequest
+	Key string
+}
+
+func defaultRequest() KVRequest {
+	return KVRequest{
+		done: make(chan error),
 	}
-	return command
+}
+
+func Set(key, value string) paxos.Request {
+	return &SetReq{
+		KVRequest: defaultRequest(),
+		Key:       key,
+		Value:     value,
+	}
+}
+
+func (req *SetReq) GetValue() string {
+	return "SET " + req.Key + " " + req.Value
+}
+
+func Del(key string) paxos.Request {
+	return &DelReq{
+		KVRequest: defaultRequest(),
+		Key:       key,
+	}
+}
+
+func (req *DelReq) GetValue() string {
+	return "DELETE " + req.Key
+}
+
+func Nop() paxos.Request {
+	return &NopReq{
+		KVRequest: defaultRequest(),
+	}
+}
+
+func (req *NopReq) GetValue() string {
+	return "NOP"
 }
 
 func (req *KVRequest) Done() chan error {

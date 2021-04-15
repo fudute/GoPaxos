@@ -5,18 +5,16 @@ import (
 	"net/http"
 
 	"github.com/fudute/GoPaxos/paxos"
+	"github.com/fudute/GoPaxos/request"
 	"github.com/gin-gonic/gin"
 )
 
 func Nop(c *gin.Context) {
-	req := paxos.Request{
-		Oper: paxos.NOP,
-		Done: make(chan error),
-	}
+	req := request.Nop()
 
-	paxos.GetBatcherInstance().In <- &req
+	paxos.GetBatcherInstance().In <- req
 
-	err := <-req.Done
+	err := <-req.Done()
 	if err != nil {
 		log.Printf("NOP error: %v", err)
 	}

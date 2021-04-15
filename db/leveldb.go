@@ -18,7 +18,7 @@ var ErrorBadLogFormat = errors.New("bad log format")
 
 func InitDB() {
 	paxos.DB = NewLevelDB("../db")
-	paxos.DB.Restore(paxos.GetProposerInstance(), paxos.GetAcceptorInstance(), sm.GetKVStateMachineInstance())
+	paxos.DB.Restore(paxos.GetProposerInstance(), paxos.GetAcceptorInstance(), sm.GetKVStatMachineInstance())
 }
 
 // [key = index, set key value ]
@@ -80,7 +80,7 @@ func (level *LevelDB) ReadLog(index int) (*paxos.LogEntry, error) {
 	return le, nil
 }
 
-func (level *LevelDB) Restore(p *paxos.Proposer, a *paxos.Acceptor, statMachine sm.StateMachine) error {
+func (level *LevelDB) Restore(p *paxos.Proposer, a *paxos.Acceptor, statMachine sm.StatMachine) error {
 
 	iter := level.db.NewIterator(nil, nil)
 

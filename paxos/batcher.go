@@ -10,12 +10,12 @@ const BatcherDefaultLimit = 100
 type Batcher struct {
 	duration time.Duration
 	limit    int
-	Out      chan *BatchRequest
-	In       chan *Request
+	Out      chan BatchRequest
+	In       chan Request
 }
 
 type BatchRequest struct {
-	Reqs []*Request
+	Reqs []Request
 	Done chan struct{}
 }
 
@@ -25,8 +25,8 @@ func init() {
 	batcher = &Batcher{
 		duration: BatcherDefaultDuration,
 		limit:    BatcherDefaultLimit,
-		Out:      make(chan *BatchRequest),
-		In:       make(chan *Request),
+		Out:      make(chan BatchRequest),
+		In:       make(chan Request),
 	}
 
 	batcher.Run()
@@ -34,8 +34,8 @@ func init() {
 
 func (b *Batcher) Run() {
 	go func() {
-		batchReqs := &BatchRequest{
-			Reqs: make([]*Request, 0, b.limit),
+		batchReqs := BatchRequest{
+			Reqs: make([]Request, 0, b.limit),
 			Done: make(chan struct{}),
 		}
 		for {

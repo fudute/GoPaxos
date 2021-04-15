@@ -11,6 +11,7 @@ import (
 
 	"github.com/fudute/GoPaxos/handlers"
 	"github.com/fudute/GoPaxos/paxos"
+	"github.com/fudute/GoPaxos/request"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -68,13 +69,11 @@ func main() {
 }
 
 func catchUpOthers() {
-	req := paxos.Request{
-		Oper: paxos.NOP,
-		Done: make(chan error),
-	}
-	paxos.GetBatcherInstance().In <- &req
+	req := request.Nop()
 
-	err := <-req.Done
+	paxos.GetBatcherInstance().In <- req
+
+	err := <-req.Done()
 	if err != nil {
 		log.Printf("catch up others NOP error: %v\n", err)
 	}

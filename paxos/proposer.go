@@ -22,12 +22,12 @@ var proposer = &Proposer{
 	ServerID: GetServerID(),
 }
 
-type Request struct {
-	Oper  int
-	Key   string
-	Value string
-	Done  chan error
-}
+// type Request struct {
+// 	// Oper  int
+// 	// Key   string
+// 	Value string
+// 	Done  chan error
+// }
 
 type PrepareRequest struct {
 	Index       int
@@ -75,7 +75,7 @@ func ProposerHandleRequst() {
 			}
 			// 这里可以选择往done中传不同的参数表示不同的结果
 			for i := 0; i < len(batchReqs.Reqs); i++ {
-				batchReqs.Reqs[i].Done <- err
+				batchReqs.Reqs[i].Done() <- err
 			}
 			batchReqs.Done <- struct{}{}
 		}
@@ -113,24 +113,14 @@ func InitProposerNetwork() {
 // peers including itself
 // 这里发起proposal，直到自己提议的value被chosen，具体的数据传输在doPrepare中完成
 // oper取值范围为SET DELETE NOP
-func StartNewInstance(reqs ...*Request) error {
+func StartNewInstance(reqs ...Request) error {
 
 	var commands string
 
 	// 这里首先假设key和value只包含26个英文字母，然后使用 ';' 来分割commands中的不同命令
 	// 注：在log中，已经使用 ':' 来分割不同的部分，所以在这里不能用 ':'
 	for _, req := range reqs {
-		var command string
-		if req.Oper == SET {
-			command = "SET " + req.Key + " " + req.Value
-		} else if req.Oper == DELETE {
-			command = "DELETE " + req.Key
-		} else if req.Oper == NOP {
-			command = "NOP"
-		} else {
-			return ErrorUnkonwCommand
-		}
-		commands += commandSpliter + command
+		commands += commandSpliter + req.GetValue()
 	}
 	commands = commands[1:]
 

@@ -2,13 +2,6 @@ package paxos
 
 import "strconv"
 
-const (
-	SET = iota
-	GET
-	DELETE
-	NOP
-)
-
 type LogEntry struct {
 	MinProposal      int
 	AcceptedProposal int
